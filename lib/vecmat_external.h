@@ -73,14 +73,14 @@ constexpr static inline uintmax_t VM_BIT_FLOOR(uintmax_t x) { return ((x == 0) |
 
 enum class alg
 {
-        emp = 0 << 0,
-        elm = 1 << 0,
-        vec = 1 << 1,
-        ver = 1 << 2,
-        mot = 1 << 3,
-        mat = 1 << 4,
-        ten = 1 << 5,
-        def = 1 << 6,
+        emp = 0 << 0, // empty
+        elm = 1 << 0, // element/scalar
+        vec = 1 << 1, // vector/linear
+        ver = 1 << 2, // versor/normalized quaternion
+        mot = 1 << 3, // motor
+        mat = 1 << 4, // matrix
+        ten = 1 << 5, // tensor
+        def = 1 << 6, // default/adaptive
 };
 
 template<typename T, size_t N, enum alg A = alg::def, size_t N_POW2 = VM_BIT_CEIL(N), size_t T_S = std::max<size_t>(alignof(T), sizeof(T))>
