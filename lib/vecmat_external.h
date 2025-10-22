@@ -71,19 +71,22 @@ switch(std::numeric_limits<uintmax_t>::digits)
 constexpr static inline bool      VM_ISPOW2   (uintmax_t x) { return x && (!(x & (x-1)));                                            }
 constexpr static inline uintmax_t VM_BIT_FLOOR(uintmax_t x) { return ((x == 0) || VM_ISPOW2(x) ? x : ((VM_BIT_FLOOR(x >> 1)) << 1)); }
 
-enum class align
+enum class alg
 {
-	none     = 0 << 0,
-	scalar   = 1 << 0,
-	linear   = 1 << 1,
-	matrix   = 1 << 2,
-	adaptive = 1 << 3,
+        emp = 0 << 0,
+        elm = 1 << 0,
+        vec = 1 << 1,
+        ver = 1 << 2,
+        mot = 1 << 3,
+        mat = 1 << 4,
+        ten = 1 << 5,
+        def = 1 << 6,
 };
 
-template<typename T, size_t N, enum align A = align::adaptive, size_t N_POW2 = VM_BIT_CEIL(N), size_t T_S = std::max<size_t>(alignof(T), sizeof(T))>
-struct alignas((((N == N_POW2) && (A != align::scalar)) || ((A == align::linear) || (A == align::matrix))) ? N_POW2 * T_S : T_S) vec : std::array<T,N> {
+template<typename T, size_t N, enum alg A = alg::def, size_t N_POW2 = VM_BIT_CEIL(N), size_t T_S = std::max<size_t>(alignof(T), sizeof(T))>
+struct alignas((((N == N_POW2) && (A != alg::elm)) || ((A == alg::vec) || (A == alg::mat))) ? N_POW2 * T_S : T_S) vec : std::array<T,N> {
 
-template<size_t N_DST = N, enum align A_DST = align::adaptive>
+template<size_t N_DST = N, enum alg A_DST = alg::def>
 operator vec<T,N_DST,A_DST>() { return *reinterpret_cast<vec<T,N_DST,A_DST>*>(this); }
 
 constexpr inline T& x() { return (*this)[0]; }
@@ -128,13 +131,13 @@ constexpr inline const T& a() const { static_assert(N >= 4); return (*this)[3]; 
 
 constexpr static inline const vec<T,N,A> id(ssize_t i = -1) { vec<T,N> dst = {}; if(i == -1) dst.fill(1); else dst[i % N] = (T)1; return dst; }
 
-template<enum align A_DST = align::adaptive>
+template<enum alg A_DST = alg::def>
 constexpr inline const vec<T,3,A_DST> yzx() const { return vec<T,3,A_DST>{ y(), z(), x() }; }
-template<enum align A_DST = align::adaptive>
+template<enum alg A_DST = alg::def>
 constexpr inline const vec<T,3,A_DST> zxy() const { return vec<T,3,A_DST>{ z(), x(), y() }; }
-template<enum align A_DST = align::adaptive>
+template<enum alg A_DST = alg::def>
 constexpr inline const vec<T,3,A_DST> hbp() const { return vec<T,3,A_DST>{ h(), b(), p() }; }
-template<enum align A_DST = align::adaptive>
+template<enum alg A_DST = alg::def>
 constexpr inline const vec<T,3,A_DST> bph() const { return vec<T,3,A_DST>{ b(), p(), h() }; }
 
 constexpr inline T sum() const                    { return std::accumulate(this->cbegin(), this->cend(), T{}); }
@@ -146,28 +149,28 @@ constexpr inline vec<T,N,A> operator-() const
 }
 
 /* arithmetic vector */
-template<typename T_OTHER, size_t N_OTHER, enum align A_OTHER = align::adaptive, typename T_DST = decltype((T)1 + (T_OTHER)1)>
+template<typename T_OTHER, size_t N_OTHER, enum alg A_OTHER = alg::def, typename T_DST = decltype((T)1 + (T_OTHER)1)>
 constexpr inline vec<T_DST,N,A> operator+(const vec<T_OTHER,N_OTHER,A_OTHER> &other) const
 {
 	vec<T_DST,N,A> dst = {};
 	std::transform(this->cbegin(), this->cbegin() + std::min<size_t>(N_OTHER,N), other.cbegin(), dst.begin(), std::plus<>{});
 	return dst;
 }
-template<typename T_OTHER, size_t N_OTHER, enum align A_OTHER = align::adaptive, typename T_DST = decltype((T)1 - (T_OTHER)1)>
+template<typename T_OTHER, size_t N_OTHER, enum alg A_OTHER = alg::def, typename T_DST = decltype((T)1 - (T_OTHER)1)>
 constexpr inline vec<T_DST,N,A> operator-(const vec<T_OTHER,N_OTHER,A_OTHER> &other) const
 {
 	vec<T_DST,N,A> dst = {};
 	std::transform(this->cbegin(), this->cbegin() + std::min<size_t>(N_OTHER,N), other.cbegin(), dst.begin(), std::minus<>{});
 	return dst;
 }
-template<typename T_OTHER, size_t N_OTHER, enum align A_OTHER = align::adaptive, typename T_DST = decltype((T)1 * (T_OTHER)1)>
+template<typename T_OTHER, size_t N_OTHER, enum alg A_OTHER = alg::def, typename T_DST = decltype((T)1 * (T_OTHER)1)>
 constexpr inline vec<T_DST,N,A> operator*(const vec<T_OTHER,N_OTHER,A_OTHER> &other) const
 {
 	vec<T_DST,N,A> dst = {};
 	std::transform(this->cbegin(), this->cbegin() + std::min<size_t>(N_OTHER,N), other.cbegin(), dst.begin(), std::multiplies<>{});
 	return dst;
 }
-template<typename T_OTHER, size_t N_OTHER, enum align A_OTHER = align::adaptive, typename T_DST = decltype((T)1 / (T_OTHER)1)>
+template<typename T_OTHER, size_t N_OTHER, enum alg A_OTHER = alg::def, typename T_DST = decltype((T)1 / (T_OTHER)1)>
 constexpr inline vec<T_DST,N,A> operator/(const vec<T_OTHER,N_OTHER,A_OTHER> &other) const
 {
 	vec<T_DST,N,A> dst = {};
@@ -209,25 +212,25 @@ constexpr inline vec<T_DST,N,A> operator/(const T_OTHER &other) const
 }
 
 /* arithmetic assign vector */
-template<typename T_OTHER, size_t N_OTHER, enum align A_OTHER = align::adaptive>
+template<typename T_OTHER, size_t N_OTHER, enum alg A_OTHER = alg::def>
 constexpr inline vec<T,N,A> operator+=(const vec<T_OTHER,N_OTHER,A_OTHER> &other)
 {
 	std::transform(this->cbegin(), this->cbegin() + std::min<size_t>(N_OTHER,N), other.cbegin(), this->begin(), std::plus<>{});
 	return (*this);
 }
-template<typename T_OTHER, size_t N_OTHER, enum align A_OTHER = align::adaptive>
+template<typename T_OTHER, size_t N_OTHER, enum alg A_OTHER = alg::def>
 constexpr inline vec<T,N,A> operator-=(const vec<T_OTHER,N_OTHER,A_OTHER> &other)
 {
 	std::transform(this->cbegin(), this->cbegin() + std::min<size_t>(N_OTHER,N), other.cbegin(), this->begin(), std::minus<>{});
 	return (*this);
 }
-template<typename T_OTHER, size_t N_OTHER, enum align A_OTHER = align::adaptive>
+template<typename T_OTHER, size_t N_OTHER, enum alg A_OTHER = alg::def>
 constexpr inline vec<T,N,A> operator*=(const vec<T_OTHER,N_OTHER,A_OTHER> &other)
 {
 	std::transform(this->cbegin(), this->cbegin() + std::min<size_t>(N_OTHER,N), other.cbegin(), this->begin(), std::multiplies<>{});
 	return (*this);
 }
-template<typename T_OTHER, size_t N_OTHER, enum align A_OTHER = align::adaptive>
+template<typename T_OTHER, size_t N_OTHER, enum alg A_OTHER = alg::def>
 constexpr inline vec<T,N,A> operator/=(const vec<T_OTHER,N_OTHER,A_OTHER> &other)
 {
 	std::transform(this->cbegin(), this->cbegin() + std::min<size_t>(N_OTHER,N), other.cbegin(), this->begin(), [](const T& a, const T& b) { return (T)a*(T)1/b; });
@@ -273,18 +276,18 @@ friend inline vec<T,N,A> operator-(const scalar s, const vec<T,N,A> &rhs) { retu
 friend inline vec<T,N,A> operator*(const scalar s, const vec<T,N,A> &rhs) { return  rhs * s; }
 friend inline vec<T,N,A> operator/(const scalar s, const vec<T,N,A> &rhs) { vec<T,N,A> tmp = {}; tmp.fill(s); return tmp/rhs; }
 
-template<size_t N_A = 3, size_t N_B = 3, enum align A_A = align::adaptive, enum align A_B = align::adaptive>
+template<size_t N_A = 3, size_t N_B = 3, enum alg A_A = alg::def, enum alg A_B = alg::def>
 constexpr static inline scalar dot(const vec<T,N_A,A_A> &a, const vec<T,N_B,A_B> &b) { return (a * b).sum(); }
 
-template<size_t N_A = 3, size_t N_B = 3, enum align A_A = align::adaptive, enum align A_B = align::adaptive>
+template<size_t N_A = 3, size_t N_B = 3, enum alg A_A = alg::def, enum alg A_B = alg::def>
 constexpr static inline vec<T,3> cross3(const vec<T,N_A,A_A> &a, const vec<T,N_B,A_B> &b)
 {
-  return vec<T,3,align::linear>{a.y()*b.z(), a.z()*b.x(), a.x()*b.y()}
-       - vec<T,3,align::linear>{b.y()*a.z(), b.z()*a.x(), b.x()*a.y()};
+  return vec<T,3,alg::vec>{a.y()*b.z(), a.z()*b.x(), a.x()*b.y()}
+       - vec<T,3,alg::vec>{b.y()*a.z(), b.z()*a.x(), b.x()*a.y()};
 }
 constexpr inline scalar mag() const { return (scalar)sqrt(dot((*this),(*this))); }
 
-template<size_t N_A = 3, size_t N_B = 3, enum align A_A = align::adaptive, enum align A_B = align::adaptive>
+template<size_t N_A = 3, size_t N_B = 3, enum alg A_A = alg::def, enum alg A_B = alg::def>
 static constexpr inline scalar distance(const vec<T,N_A,A_A> &a, const vec<T,N_B,A_B> &b) { return (a - b).mag(); }
 
 
@@ -292,17 +295,17 @@ static constexpr inline scalar distance(const vec<T,N_A,A_A> &a, const vec<T,N_B
 
 using vector                = vec<scalar,3>;
 using vector_array          = vector;
-using aligned_vector        = vec<scalar,3,align::linear>;
+using aligned_vector        = vec<scalar,3,alg::vec>;
 using aligned_vector_array  = aligned_vector;
 
 using vector4               = vec<scalar,4>;
 using vector4_array         = vector4;
-using aligned_vector4       = vec<scalar,4,align::linear>; 
+using aligned_vector4       = vec<scalar,4,alg::vec>; 
 using aligned_vector4_array = aligned_vector4;
 
 using angvec                = vec<angle,3>;
 using angvec_array          = angvec;
-using aligned_angvec        = vec<angle,3,align::linear>;
+using aligned_angvec        = vec<angle,3,alg::vec>;
 using aligned_angvec_array  = aligned_angvec;
 
 // Set an angvec to {0,0,0}
