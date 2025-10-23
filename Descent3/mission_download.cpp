@@ -399,7 +399,7 @@ bool msn_DownloadWithStatus(const char *url, const std::filesystem::path &filena
   }
 
   httplib::Result (D3::HttpClient::*hcg)(const std::string &, const httplib::ContentReceiver &,
-                                         const httplib::DownloadProgress &) = &D3::HttpClient::Get;
+                                         const std::function<bool(size_t current, size_t total)> &) = &D3::HttpClient::Get;
   std::fstream in(qualfile, std::ios::binary | std::ios::trunc | std::ios::out);
   auto async_task = std::async(
       std::launch::async, hcg, &http_client, download_uri,
